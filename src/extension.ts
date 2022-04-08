@@ -73,7 +73,7 @@ function handle(_target: Wrap, _prefix?: boolean, type?: string) {
 
             switch (type) {
                 case "name": {
-                    wrapData.txt = `${funcName}(${q}${wrapData.item}${q})${sc}`;
+                    wrapData.txt = `${funcName}(${wrapData.item})${sc}`;
                     break;
                 }
                 case "nameValue": {
