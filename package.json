@@ -5,7 +5,8 @@
     "scripts": {
         "vscode:prepublish": "tsc -p ./",
         "compile": "tsc -watch -p ./",
-        "build": "vsce package -o ./packages"
+        "build": "vsce package",
+        "publish": "vsce publish"
     },
     "repository": {
         "type": "git",
