@@ -1,7 +1,7 @@
 {
     "name": "wrap-log-simple",
     "displayName": "Wrap Log Simple",
-    "description": "Wrap your log function (defaults to javascript) by word or selection",
+    "description": "Wrap your log function (defaults to console.log) by word or selection",
     "scripts": {
         "vscode:prepublish": "tsc -p ./",
         "compile": "tsc -watch -p ./",
@@ -40,21 +40,35 @@
                     "default": "console.log",
                     "description": "Replace console.log with any function name, e.g.: fmt.Println(\"variable\", variable)",
                     "scope": "language-overridable",
-                    "title": "function name",
+                    "title": "Function Name",
                     "type": "string"
                 },
                 "wrap-log-simple.useSemicolon": {
                     "default": false,
                     "description": "Adds a semicolon to the end of the statement.",
                     "scope": "language-overridable",
-                    "title": "use semicolon",
+                    "title": "Use Semicolon",
                     "type": "boolean"
                 },
                 "wrap-log-simple.useSingleQuotes": {
                     "default": false,
-                    "description": "Wraps the selected variable in single quotes. ",
+                    "description": "Wraps the selected variable in single quotes.",
                     "scope": "language-overridable",
-                    "title": "use single quotes",
+                    "title": "Use Single Quotes",
+                    "type": "boolean"
+                },
+                "wrap-log-simple.useParentheses": {
+                    "default": true,
+                    "description": "Adds parentheses around log function call.",
+                    "scope": "language-overridable",
+                    "title": "Use Single Quotes",
+                    "type": "boolean"
+                },
+                "wrap-log-simple.usePrefixSpace": {
+                    "default": false,
+                    "description": "Adds a space after log prefix when used.",
+                    "scope": "language-overridable",
+                    "title": "Use Single Quotes",
                     "type": "boolean"
                 }
             }

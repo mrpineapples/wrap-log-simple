@@ -70,18 +70,25 @@ function handle(_target: Wrap, _prefix?: boolean, type?: string) {
 
             const sc = getSetting("useSemicolon") ? ";" : "";
             const q = getSetting("useSingleQuotes") ? `'` : `"`;
+            const ps = getSetting("usePrefixSpace") ? " " : "";
+            const p = getSetting("useParentheses");
 
+            const leftP = p ? "(" : " ";
+            const rightP = p ? ")" : "";
             switch (type) {
                 case "name": {
-                    wrapData.txt = `${funcName}(${wrapData.item})${sc}`;
+                    // prettier-ignore
+                    wrapData.txt = `${funcName}${leftP}${wrapData.item}${rightP}${sc}`;
                     break;
                 }
                 case "nameValue": {
-                    wrapData.txt = `${funcName}(${q}${wrapData.item}${q}, ${wrapData.item})${sc}`;
+                    // prettier-ignore
+                    wrapData.txt = `${funcName}${leftP}${q}${wrapData.item}${ps}${q}, ${wrapData.item}${rightP}${sc}`;
                     break;
                 }
                 default: {
-                    wrapData.txt = `${funcName}(${q}${wrapData.item}${q})${sc}`;
+                    // prettier-ignore
+                    wrapData.txt = `${funcName}${leftP}${wrapData.item}${rightP}${sc}`;
                     break;
                 }
             }
