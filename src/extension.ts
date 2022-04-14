@@ -5,43 +5,42 @@ import {
     ExtensionContext,
     Position,
     Range,
-    Selection,
-    TextDocument,
     TextEditor,
     TextLine,
     window,
     workspace,
 } from "vscode";
-import { SupportedSettingTypes } from "./types";
+import { Command, WrapData } from "./types";
 
 const EXTENSION_NAME = "wrap-log-simple";
 let currentEditor: TextEditor;
 
-export function activate(context: ExtensionContext) {
-    currentEditor = window.activeTextEditor;
+export const activate = (context: ExtensionContext) => {
+    currentEditor = window.activeTextEditor as TextEditor;
 
-    window.onDidChangeActiveTextEditor((editor) => (currentEditor = editor));
+    window.onDidChangeActiveTextEditor((editor) => {
+        if (editor) {
+            currentEditor = editor;
+        }
+    });
 
     context.subscriptions.push(
         commands.registerTextEditorCommand("wrap.log.name", (_editor, _edit) =>
-            handle(Wrap.Down, true, "name")
-        )
-    );
-
-    context.subscriptions.push(
+            handle(Command.Name)
+        ),
         commands.registerTextEditorCommand(
             "wrap.log.nameValue",
-            (_editor, _edit) => handle(Wrap.Down, true, "nameValue")
+            (_editor, _edit) => handle(Command.NameValue)
         )
     );
-}
+};
 
-function handle(_target: Wrap, _prefix?: boolean, type?: string) {
-    new Promise((resolve, reject) => {
-        let sel = currentEditor.selection;
-        let len = sel.end.character - sel.start.character;
+const executeCommand = (type?: string): Promise<WrapData> => {
+    return new Promise<WrapData>((resolve, reject) => {
+        const sel = currentEditor.selection;
+        const len = sel.end.character - sel.start.character;
 
-        let selectionRange =
+        const selectionRange =
             len === 0
                 ? currentEditor.document.getWordRangeAtPosition(sel.anchor)
                 : new Range(sel.start, sel.end);
@@ -49,29 +48,26 @@ function handle(_target: Wrap, _prefix?: boolean, type?: string) {
         if (!selectionRange) {
             reject("No selection made");
         } else {
-            let doc = currentEditor.document;
-            let lineNumber = selectionRange.start.line;
-            let item = doc.getText(selectionRange);
-
-            let idx = doc.lineAt(lineNumber).firstNonWhitespaceCharacterIndex;
-            let ind = doc.lineAt(lineNumber).text.substring(0, idx);
-            const funcName = getSetting("functionName");
-            let wrapData: any = {
-                txt: getSetting("functionName"),
-                item: item,
-                doc: doc,
-                ran: selectionRange,
-                idx: idx,
-                ind: ind,
+            const doc = currentEditor.document;
+            const lineNumber = selectionRange.start.line;
+            const idx = doc.lineAt(lineNumber).firstNonWhitespaceCharacterIndex;
+            const funcName = getSetting<string>("functionName");
+            const wrapData: WrapData = {
+                doc,
+                idx,
+                ind: doc.lineAt(lineNumber).text.substring(0, idx),
+                isLastLine: doc.lineCount - 1 === lineNumber,
+                item: doc.getText(selectionRange),
                 line: lineNumber,
-                sel: sel,
-                lastLine: doc.lineCount - 1 == lineNumber,
+                ran: selectionRange,
+                sel,
+                txt: funcName,
             };
 
-            const sc = getSetting("useSemicolon") ? ";" : "";
-            const q = getSetting("useSingleQuotes") ? `'` : `"`;
-            const ps = getSetting("usePrefixSpace") ? " " : "";
-            const p = getSetting("useParentheses");
+            const sc = getSetting<boolean>("useSemicolon") ? ";" : "";
+            const q = getSetting<boolean>("useSingleQuotes") ? `'` : `"`;
+            const ps = getSetting<boolean>("usePrefixSpace") ? " " : "";
+            const p = getSetting<boolean>("useParentheses");
 
             const leftP = p ? "(" : " ";
             const rightP = p ? ")" : "";
@@ -94,72 +90,53 @@ function handle(_target: Wrap, _prefix?: boolean, type?: string) {
             }
             resolve(wrapData);
         }
-    })
-        .then((wrap: WrapData) => {
-            let nxtLine: TextLine;
-            let nxtLineInd: string;
+    });
+};
 
-            if (!wrap.lastLine) {
-                nxtLine = wrap.doc.lineAt(wrap.line + 1);
-                nxtLineInd = nxtLine.text.substring(
-                    0,
-                    nxtLine.firstNonWhitespaceCharacterIndex
-                );
-            } else {
-                nxtLineInd = "";
-            }
-            currentEditor
-                .edit((e) => {
-                    e.insert(
-                        new Position(
-                            wrap.line,
-                            wrap.doc.lineAt(wrap.line).range.end.character
-                        ),
-                        "\n".concat(
-                            nxtLineInd > wrap.ind ? nxtLineInd : wrap.ind,
-                            wrap.txt
-                        )
-                    );
-                })
-                .then(() => {
-                    currentEditor.selection = wrap.sel;
-                });
-        })
-        .catch((message) => {
-            console.error(message);
+const handle = async (type?: string) => {
+    try {
+        const wrap = await executeCommand(type);
+        let nextLineInd: string = "";
+
+        if (!wrap.isLastLine) {
+            const nextLine = wrap.doc.lineAt(wrap.line + 1);
+            nextLineInd = nextLine.text.substring(
+                0,
+                nextLine.firstNonWhitespaceCharacterIndex
+            );
+        }
+
+        await currentEditor.edit((e) => {
+            e.insert(
+                new Position(
+                    wrap.line,
+                    wrap.doc.lineAt(wrap.line).range.end.character
+                ),
+                "\n".concat(
+                    nextLineInd > wrap.ind ? nextLineInd : wrap.ind,
+                    wrap.txt
+                )
+            );
         });
-}
+        currentEditor.selection = wrap.sel;
+    } catch (err) {
+        console.error(err);
+    }
+};
 
-const getSetting = (setting: string): SupportedSettingTypes => {
+const getSetting = <T>(setting: string): T => {
     const settingId = `${EXTENSION_NAME}.${setting}`;
     const langKey = `[${currentEditor.document.languageId}]`;
     const config = workspace.getConfiguration("", currentEditor.document);
     const langWorkspaceValue =
-        config.inspect(langKey).workspaceValue?.[settingId];
-    const langGlobalValue = config.inspect(langKey).globalValue?.[settingId];
+        config.inspect<any>(langKey)?.workspaceValue?.[settingId];
+    const langGlobalValue =
+        config.inspect<any>(langKey)?.globalValue?.[settingId];
     const defaultValue = workspace.getConfiguration(EXTENSION_NAME)[setting];
 
     return langWorkspaceValue ?? langGlobalValue ?? defaultValue;
 };
 
-interface WrapData {
-    doc: TextDocument;
-    idx: number;
-    ind: string;
-    item: string;
-    lastLine: boolean;
-    line: number;
-    ran: Range;
-    sel: Selection;
-    txt: string;
-}
-
-enum Wrap {
-    Down,
-    Inline,
-    Up,
-}
-
-export function deactivate() {
+export const deactivate = () => {
     return undefined;
-}
+};

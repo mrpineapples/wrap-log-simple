@@ -9,7 +9,7 @@ This was originally developed here https://github.com/midnightsyntax/vscode-wrap
 This extension will read the word under your cursor and insert it into the log function (`console.log` by default)
 
 ```
-alt (option on mac) + L: console.log('variable');
+alt (option on mac) + L: console.log("variable");
 
 cmd + L: console.log("variable", variable);
 ```
